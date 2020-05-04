@@ -89,10 +89,9 @@ clients = []
 #     return cache_decorator
 
 # @cache('put')
-def put(user):
+def put(key, user, data_bytes):
     # if not is_member(user):
     #    add_member(user)
-    data_bytes, key = serialize_PUT(user)
     # hash
     fix_me_server_id = ring.get_node(key)
     print(f"key={key},server_id={fix_me_server_id}")
@@ -102,28 +101,29 @@ def put(user):
 # @cache('get')
 
 
-def get(user_hash):
+def get(key, data_bytes):
     # if is_member(user_hash):
-    data_bytes, key = serialize_GET(user_hash)
 
     # todo hash
     fix_me_server_id = ring.get_node(key)
     print(f"key={key},server_id={fix_me_server_id}")
     response = clients[fix_me_server_id].send(data_bytes)
-    return response
+    resStr = deserialize(response)
+    return resStr
     # else:
     #     return None
 
 
 # @cache('delete')
-def delete(user_hash):
+def delete(key, data_bytes):
     # if is_member(user_hash):
-    data_bytes, key = serialize_DELETE(user_hash)
+
     # todo hash
     fix_me_server_id = ring.get_node(key)
     print(f"key={key},server_id={fix_me_server_id}")
     response = clients[fix_me_server_id].send(data_bytes)
-    return response
+    resStr = deserialize(response)
+    return resStr
 
 
 def process(udp_clients):
@@ -134,12 +134,12 @@ def process(udp_clients):
     # PUT all users.
     print("begin to put users")
     for u in USERS:
-
-        response = put(u)
+        data_bytes, key = serialize_PUT(u)
+        response = put(key, u, data_bytes)
         response = str(response, encoding='utf-8')
         hash_codes.add(response)
         print(f"PUT response: {response}")
-        print(response)
+        # print(response)
 
     print(
         f"Number of Users={len(USERS)}\nNumber of Users Cached={len(hash_codes)}")
@@ -148,34 +148,38 @@ def process(udp_clients):
     # GET all users.
     print("begin to get users")
     for hc in hash_codes:
-        response = get(hc)
+        data_bytes, key = serialize_GET(hc)
+        response = get(key, data_bytes)
         # debug code, check response
-        resStr = deserialize(response)
-        print(f"GET response: {resStr}")
+        # resStr = deserialize(response)
+        print(f"GET response: {response}")
 
     # DELETE all users.
     print("begin to delete users")
     for hc in hash_codes:
-        response = delete(hc)
+        data_bytes, key = serialize_DELETE(hc)
+        response = delete(key, data_bytes)
         # debug code, check response
-        resStr = deserialize(response)
-        print(f"DELETE response: {resStr}")
+
+        print(f"DELETE response: {response}")
 
     # DELETE all users.
     print("begin to delete users2")
     for hc in hash_codes:
-        response = delete(hc)
+        data_bytes, key = serialize_DELETE(hc)
+        response = delete(key, data_bytes)
         # debug code, check response
-        resStr = deserialize(response)
-        print(f"DELETE response2: {resStr}")
+        # resStr = deserialize(response)
+        print(f"DELETE response2: {response}")
 
      # GET all users again.
     print("begin to get users2")
     for hc in hash_codes:
-        response = get(hc)
+        data_bytes, key = serialize_GET(hc)
+        response = get(key, data_bytes)
         # debug code, check response
-        resStr = deserialize(response)
-        print(f"GET response2: {resStr}")
+        # resStr = deserialize(response)
+        print(f"GET response2: {response}")
 
 
 if __name__ == "__main__":
