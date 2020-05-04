@@ -1,3 +1,4 @@
+import functools
 import sys
 import socket
 import time
@@ -31,64 +32,69 @@ class UDPClient():
 
 ring = NodeRing(nodes=[0, 1, 2, 3])
 clients = []
-# node = ring.get_node('9ad5794ec94345c4873c4e591788743a')
 
 
-# class CacheDict(dict):
-#     cache_queue = queue.Queue(5)
-#     def __init__(self):
-#         self = dict()
+class CacheDict(dict):
+    cache_queue = queue.Queue(5)
+
+    def __init__(self):
+        self = dict()
+
+    def put(self, key, value):
+        if len(self) == 5:
+            # remove one
+            remove_key = self.cache_queue.pop()
+            del self[remove_key]
+        self[key] = value
+        self.cache_queue.put(key)
+        return key
 
 
-#     def put(self, key, value):
-#         if len(self) == 5:
-#             #remove one
-#             remove_key =  self.cache_queue.pop()
-#             del self[remove_key]
-#         self[key] = value
-#         self.cache_queue.put(key)
-#         return key
+cache_data = CacheDict()
 
-# cache_data = CacheDict()
 
-# bloom = BloomFilter(100, 0.001)
+def lru_cache(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        if func.__name__ == 'put':
+            user_id = args[0]
+            user = cache_data.get(user_id)
+            if not user:
+                user = args[1]
+                cache_data[user_id] = user
+                print(
+                    f'put id={user_id}, val={user} in cache and put it to server')
+                return func(*args, **kwargs)
+            print(
+                f'already have id={user_id}, val={user} in cache, not put to server')
+            return user_id  # todo check
+        elif func.__name__ == 'get':
+            user_id = args[0]
+            user = cache_data.get(user_id)
+            if not user:
+                return func(*args, **kwargs)
+            print(
+                f'get: already have id={user_id}, val={user} in cache, not get it from server')
+            return user
+        elif func.__name__ == 'delete':
+            user_id = args[0]
+            user = cache_data.get(user_id)
+            if user:
+                del cache_data[user_id]
+                print(
+                    f'delete id={user_id}, val={user} from cache and delete it from server')
+                return func(*args, **kwargs)
+            print(
+                f'no id={user_id}, val={user} in cache, not delete from server')
+            return 'success'
+        else:
+            print(f'unknown exe:{func.__name__}')
+            return func(*args, **kwargs)
 
-# def is_member(key):
-#     return key in bloom
+    return wrapper
 
-# def add_member(key):
-#     bloom.add(key)
 
-# def cache(ctype):
-#     def cache_decorator(func):
-#         # @wraps(func)
-#         def wrapped_function(*args, **kwargs):
-#             log_string = func.__name__ + " was called"
-#             print(log_string)
-#             # do sth
-#             if ctype == 'put':
-#                 data_bytes, key = serialize_PUT(args[1])
-
-#                 cache_data.put(key, data_bytes)
-#                 return func(*args, **kwargs)
-
-#                 return 'success'
-#             elif ctype == 'get':
-#                 data = cache_data.get(key)
-#                 if not data:
-#                     return data
-#                 else:
-#                     #todo if add result to cache?
-#                     return func(*args, **kwargs)
-#             elif ctype == 'delete':
-
-#                 del cache_data[key]
-#                 #todo  delete from bloom filter
-#                 return func(*args, **kwargs)
-#         return wrapped_function
-#     return cache_decorator
-
-# @cache('put')
+@lru_cache
 def put(key, user, data_bytes):
     # if not is_member(user):
     #    add_member(user)
@@ -96,11 +102,12 @@ def put(key, user, data_bytes):
     fix_me_server_id = ring.get_node(key)
     print(f"key={key},server_id={fix_me_server_id}")
     response = clients[fix_me_server_id].send(data_bytes)
+    # response = deserialize(response)
+    response = str(response, encoding='utf-8')
     return response
 
-# @cache('get')
 
-
+@lru_cache
 def get(key, data_bytes):
     # if is_member(user_hash):
 
@@ -114,7 +121,7 @@ def get(key, data_bytes):
     #     return None
 
 
-# @cache('delete')
+@lru_cache
 def delete(key, data_bytes):
     # if is_member(user_hash):
 
@@ -136,7 +143,6 @@ def process(udp_clients):
     for u in USERS:
         data_bytes, key = serialize_PUT(u)
         response = put(key, u, data_bytes)
-        response = str(response, encoding='utf-8')
         hash_codes.add(response)
         print(f"PUT response: {response}")
         # print(response)
