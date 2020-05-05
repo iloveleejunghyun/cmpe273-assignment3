@@ -1,3 +1,4 @@
+from bloom_filter import BloomFilter
 import functools
 import sys
 import socket
@@ -8,7 +9,6 @@ from sample_data import USERS
 from server_config import NODES
 from pickle_hash import serialize_GET, serialize_PUT, deserialize, serialize_DELETE
 from node_ring import NodeRing
-from pybloom import BloomFilter
 
 BUFFER_SIZE = 1024
 
@@ -94,11 +94,22 @@ def lru_cache(func):
     return wrapper
 
 
+# Bloom filter initialization
+bf = BloomFilter()
+
+
+def add_member(key):
+    bf.add(key)
+
+
+def is_member(key):
+    return bf.__contains__(key)
+
+
 @lru_cache
 def put(key, user, data_bytes):
-    # if not is_member(user):
-    #    add_member(user)
-    # hash
+    add_member(key)
+    print(f"add member {key} to bf")
     fix_me_server_id = ring.get_node(key)
     print(f"key={key},server_id={fix_me_server_id}")
     response = clients[fix_me_server_id].send(data_bytes)
@@ -109,28 +120,30 @@ def put(key, user, data_bytes):
 
 @lru_cache
 def get(key, data_bytes):
-    # if is_member(user_hash):
-
-    # todo hash
-    fix_me_server_id = ring.get_node(key)
-    print(f"key={key},server_id={fix_me_server_id}")
-    response = clients[fix_me_server_id].send(data_bytes)
-    resStr = deserialize(response)
-    return resStr
-    # else:
-    #     return None
+    if is_member(key):
+        print(f"{key} is a member")
+        fix_me_server_id = ring.get_node(key)
+        print(f"key={key},server_id={fix_me_server_id}")
+        response = clients[fix_me_server_id].send(data_bytes)
+        resStr = deserialize(response)
+        return resStr
+    else:
+        print(f"{key} is not a member")
+        return None
 
 
 @lru_cache
 def delete(key, data_bytes):
-    # if is_member(user_hash):
-
-    # todo hash
-    fix_me_server_id = ring.get_node(key)
-    print(f"key={key},server_id={fix_me_server_id}")
-    response = clients[fix_me_server_id].send(data_bytes)
-    resStr = deserialize(response)
-    return resStr
+    if is_member(key):
+        print(f"{key} is a member")
+        fix_me_server_id = ring.get_node(key)
+        print(f"key={key},server_id={fix_me_server_id}")
+        response = clients[fix_me_server_id].send(data_bytes)
+        resStr = deserialize(response)
+        return resStr
+    else:
+        print(f"{key} is not a member")
+        return 'success'
 
 
 def process(udp_clients):
