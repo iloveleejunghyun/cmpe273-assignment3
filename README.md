@@ -1,130 +1,106 @@
-# Midterm Exam Coding Questions
+# cache and bloom filter based on midterm
 
-You will be building a distributed cache solution using UDP as transport protocol. Here is how the caching protocol works:
+## Installation
+	pip install mmh3
+## Example:
 
-# PART I (15 points)
+In cache_client.py, you can see the process function is modified to execute PUT, GET, DELETE, DELETE, and GET method to verify the cache and bloom filter function.
 
-## PUT
 
-PUT operation allows you to save any Python data type in a remote cache server.
 
-### Request
 
-```python
+# LRU Cache and Bloom Filter
+
+The assignment 3 is based on our simple [distributed cache](https://github.com/sithu/cmpe273-spring20/tree/master/midterm) where you have implmented the GET and PUT operations.
+
+## 1. DELETE operation
+
+You will be adding the DELETE operation to delete entires from the distributed cache.
+
+_Request_
+
+```json
 { 
-    'operation': 'PUT',
+    'operation': 'DELETE',
     'id': 'hash_code_of_the_object',
-    'payload': 'any_object_that_you_want_to_cache_in_server' 
 }
 ```
 
-### Response
+_Response_
+
+```json
+{
+    'success'
+}
+```
+
+## 2. LRU Cache
+
+In order to reduce unnecessary network calls to the servers, you will be adding LRU cache on client side. On each GET, PUT, and DELETE call, you will be checking against data from a local cache.
+
+Implement LRU cache as Python decorator and you can pass cache size as argument.
 
 ```python
-{ 
-    'hash_code_of_the_object'
-}
+@lru_cache(5)
+def get(...):
+    ...
+    return ...
+    
+@lru_cache(5)
+def put(...):
+    ...
+    return ...
+
+@lru_cache(5)
+def delete(...):
+    ...
+    return ...
+
 ```
 
-## GET
+@lru_cache is your implementation as a decorator function and do NOT use any existing LRU libraries.
 
-GET operation allows you to retrieve any existing data stored in the remote cache server.
+## 3. Bloom Filter
 
-### Request
+Finally, you will be implementing a bloom filter so that we can validate any key lookup without hitting the servers. The bloom filter will have two operations:
+
+### Add
+
+This add() function handles adding new key to the membership set.
+
+### Is_member
+
+This is_member() function checks whether a given key is in the membership or not.
+
+On the client side, the GET and DELETE will invoke is_member(key) function first prior to calling the servers while the PUT and DELETE will call add(key) function to update the membership.
+
+Answer the following question:
+
+* What are the best _k_ hashes and _m_ bits values to store one million _n_ keys (E.g. e52f43cd2c23bb2e6296153748382764) suppose we use the same MD5 hash key from [pickle_hash.py](https://github.com/sithu/cmpe273-spring20/blob/master/midterm/pickle_hash.py#L14) and explain why?
 
 ```python
-{ 
-    'operation': 'GET',
-    'id': 'hash_code_of_the_object'
-}
-```
+@lru_cache(5)
+def get(key):
+    if bloomfilter.is_member(key):
+        return udp_client.get(key)
+    else:
+        return None
+        
+@lru_cache(5)
+def put(key, value):
+    bloomfilter.add(key)
+    return udp_client.put(key, value)
 
-### Response
-
-```python
-{ 
-    'object_in_bytes'
-}
-```
-
-# Part I
-
-The baseline code handles PUT operation and you need to implment GET operation according the above specification.
-
-To run the baseline code (server side):
-
-```
-python3 cache_server.py 0
-Cache Server[0] started at 127.0.0.1:4000
-```
-
-The last argument is the server index defined in _server_config.py_ .
-
-
-To run the client code,
+@lru_cache(5)
+def delete(key):
+    if bloomfilter.is_member(key):
+        return udp_client.delete(key)
+    else:
+        return None
 
 ```
-python3 cache_client.py
-```
 
-_Output_
 
-```
-Connecting to server at 127.0.0.1:4000
-b'd0df71363130955e493c24ac0d296a75'
-Connecting to server at 127.0.0.1:4000
-b'1c84c3d6dec3775654c4573ca4df1064'
-Connecting to server at 127.0.0.1:4000
-b'e52f43cd2c23bb2e6296153748382764'
-Connecting to server at 127.0.0.1:4000
-b'9aa0c932fb8eba9a72a6ae60064a0507'
-Connecting to server at 127.0.0.1:4000
-b'6aaae4a8f8468ef61e78b4ced80fa140'
-Connecting to server at 127.0.0.1:4000
-b'd0df71363130955e493c24ac0d296a75'
-Number of Users=6
-Number of Users Cached=5
-b'e52f43cd2c23bb2e6296153748382764'
-Connecting to server at 127.0.0.1:4000
-b'FIX_ME'
-b'9aa0c932fb8eba9a72a6ae60064a0507'
-Connecting to server at 127.0.0.1:4000
-b'FIX_ME'
-b'6aaae4a8f8468ef61e78b4ced80fa140'
-Connecting to server at 127.0.0.1:4000
-b'FIX_ME'
-b'd0df71363130955e493c24ac0d296a75'
-Connecting to server at 127.0.0.1:4000
-b'FIX_ME'
-b'1c84c3d6dec3775654c4573ca4df1064'
-Connecting to server at 127.0.0.1:4000
-b'FIX_ME'
-```
 
-Your job is to implement GET operation so that the GET response will have bytes data like this instead of FIX_ME:
 
-```
-b'\x80\x03}q\x00(X\t\x00\x00\x00operationq\x01X\x03\x00\x00\x00PUTq\x02X\x02\x00\x00\x00idq\x03X \x00\x00\x009ad5794ec94345c4873c4e591788743aq\x04X\x07\x00\x00\x00payloadq\x05}q\x06X\x04\x00\x00\x00userq\x07X\x03\x00\x00\x00Fooq\x08su.'
-```
 
-# PART II (15 points)
-
-The current solution only talks to a single server (index 0). You will be splitting (sharding) data into all four servers listed in server_config.py.
-
-Data sharding via Naive hashing is implemented in node_ring.py. You must use the def get_node(self, key_hex) function from the NodeRing() class to shard all users data into four nodes.
-
-### FROM
-
-All users go to Server index 0.
-
-### TO
-
-All users go to Servers index 0, 1, 2, and 3.
-
-The given node_ring.py can handle key lookup like this:
-
-```
-python3 node_ring.py 
-{'host': '127.0.0.1', 'port': 4002}
-{'host': '127.0.0.1', 'port': 4000}
-```

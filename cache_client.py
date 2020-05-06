@@ -1,5 +1,5 @@
 from bloom_filter import BloomFilter
-import functools
+
 import sys
 import socket
 import time
@@ -9,8 +9,16 @@ from sample_data import USERS
 from server_config import NODES
 from pickle_hash import serialize_GET, serialize_PUT, deserialize, serialize_DELETE
 from node_ring import NodeRing
+from cache import lru_cache
 
 BUFFER_SIZE = 1024
+
+
+ring = NodeRing(nodes=[0, 1, 2, 3])
+clients = []
+
+# Bloom filter initialization
+bf = BloomFilter()
 
 
 class UDPClient():
@@ -29,73 +37,6 @@ class UDPClient():
             print("Error! {}".format(socket.error))
             exit()
 
-
-ring = NodeRing(nodes=[0, 1, 2, 3])
-clients = []
-
-
-class CacheDict(dict):
-    cache_queue = queue.Queue(5)
-
-    def __init__(self):
-        self = dict()
-
-    def put(self, key, value):
-        if len(self) == 5:
-            # remove one
-            remove_key = self.cache_queue.pop()
-            del self[remove_key]
-        self[key] = value
-        self.cache_queue.put(key)
-        return key
-
-
-cache_data = CacheDict()
-
-
-def lru_cache(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        if func.__name__ == 'put':
-            user_id = args[0]
-            user = cache_data.get(user_id)
-            if not user:
-                user = args[1]
-                cache_data[user_id] = user
-                print(
-                    f'put id={user_id}, val={user} in cache and put it to server')
-                return func(*args, **kwargs)
-            print(
-                f'already have id={user_id}, val={user} in cache, not put to server')
-            return user_id  # todo check
-        elif func.__name__ == 'get':
-            user_id = args[0]
-            user = cache_data.get(user_id)
-            if not user:
-                return func(*args, **kwargs)
-            print(
-                f'get: already have id={user_id}, val={user} in cache, not get it from server')
-            return user
-        elif func.__name__ == 'delete':
-            user_id = args[0]
-            user = cache_data.get(user_id)
-            if user:
-                del cache_data[user_id]
-                print(
-                    f'delete id={user_id}, val={user} from cache and delete it from server')
-                return func(*args, **kwargs)
-            print(
-                f'no id={user_id}, val={user} in cache, not delete from server')
-            return 'success'
-        else:
-            print(f'unknown exe:{func.__name__}')
-            return func(*args, **kwargs)
-
-    return wrapper
-
-
-# Bloom filter initialization
-bf = BloomFilter()
 
 
 def add_member(key):
