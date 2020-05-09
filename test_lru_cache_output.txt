@@ -1,0 +1,50 @@
+python3 test_lru_cache.py 
+
+#这个在函数里并没有打印呀？ 在cache打印？
+#这个会因为递归而打印多次吗？
+[0.00000000s] fibonacci(0) -> 0 
+[0.00000000s] fibonacci(1) -> 1 
+#？这个为什么是1？
+[0.00009274s] fibonacci(2) -> 1 
+#这个应该是重复了。
+[cache-hit] fibonacci(1) -> 1 
+[cache-hit] fibonacci(2) -> 1 
+#后面都减少了1？
+[0.00001907s] fibonacci(3) -> 2 
+[0.00013709s] fibonacci(4) -> 3 
+[cache-hit] fibonacci(3) -> 2 
+[cache-hit] fibonacci(4) -> 3 
+[0.00001693s] fibonacci(5) -> 5 
+#这个后面为什么是8？ 哦，懂了，这是结果！！！答案呀。
+[0.00017905s] fibonacci(6) -> 8 
+#这才是test那句打印。前面的是cache里面打印的。！
+fibonacci(6)=8
+
+#？这个应该也是deocrator里面打印的。
+#cache里面不存在，就调用时间打印。
+[0.00000215s] get_data(1) -> {'id': 1, 'value': 'Foo Bar - 1'} 
+{'id': 1, 'value': 'Foo Bar - 1'}
+[0.00000095s] get_data(2) -> {'id': 2, 'value': 'Foo Bar - 2'} 
+{'id': 2, 'value': 'Foo Bar - 2'}
+[0.00000119s] get_data(3) -> {'id': 3, 'value': 'Foo Bar - 3'} 
+{'id': 3, 'value': 'Foo Bar - 3'}
+[0.00000095s] get_data(4) -> {'id': 4, 'value': 'Foo Bar - 4'} 
+{'id': 4, 'value': 'Foo Bar - 4'}
+
+#？ cache里面存在的，就调用cache hit。
+[cache-hit] get_data(1) -> {'id': 1, 'value': 'Foo Bar - 1'} 
+{'id': 1, 'value': 'Foo Bar - 1'}
+[cache-hit] get_data(2) -> {'id': 2, 'value': 'Foo Bar - 2'} 
+{'id': 2, 'value': 'Foo Bar - 2'}
+[cache-hit] get_data(3) -> {'id': 3, 'value': 'Foo Bar - 3'} 
+{'id': 3, 'value': 'Foo Bar - 3'}
+[cache-hit] get_data(4) -> {'id': 4, 'value': 'Foo Bar - 4'} 
+{'id': 4, 'value': 'Foo Bar - 4'}
+
+[0.00000095s] get_data(5) -> {'id': 5, 'value': 'Foo Bar - 5'} 
+{'id': 5, 'value': 'Foo Bar - 5'}
+[0.00000095s] get_data(6) -> {'id': 6, 'value': 'Foo Bar - 6'} 
+{'id': 6, 'value': 'Foo Bar - 6'}
+
+Num of function calls:10
+Num of cache misses:6

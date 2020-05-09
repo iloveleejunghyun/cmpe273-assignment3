@@ -1,0 +1,19 @@
+pipenv run python3 test_bloom_filter.py 
+#哦懂了。 打乱了顺序的，shuffle。
+#？为什么第一个打印的是blossom？和数组顺序不同呀？
+'blossom' is probably present!
+#？为什么第二个是abounds？
+'abounds' is probably present!
+'bonny' is probably present!
+'abundant' is probably present!
+'accessable' is probably present!
+'abound' is probably present!
+
+#注意，这里说的是肯定不存在。！
+'facebook' is definitely not present!
+'bolster' is probably present!
+'bloom' is probably present!
+'bonus' is probably present!
+#有意思，twitter是FP！要小心了！
+'twitter' is a false positive!
+'abundance' is probably present!

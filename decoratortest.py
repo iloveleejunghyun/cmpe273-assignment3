@@ -73,13 +73,14 @@ import queue
 
 
 class CacheDict(dict):
-    cache_queue = queue.Queue(5)
 
-    def __init__(self):
+    def __init__(self, size):
         self = dict()
+        cache_queue = queue.Queue(size)
+        cache_size = size
 
     def put(self, key, value):
-        if len(self) == 5:
+        if len(self) == self.cache_size:
             # remove one
             remove_key = self.cache_queue.pop()
             del self[remove_key]
@@ -88,63 +89,113 @@ class CacheDict(dict):
         return key
 
 
-cache_data = CacheDict()
+cache_data = None
+
+# decorator 1
 
 
-def lru_cache(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        if func.__name__ == 'put':
-            user_id = args[0]
-            user = cache_data.get(user_id)
-            if not user:
-                user = args[1]
-                cache_data[user_id] = user
+# def lru_cache(func):
+#     @functools.wraps(func)
+#     def wrapper(*args, **kwargs):
+#         if func.__name__ == 'put':
+#             user_id = args[0]
+#             user = cache_data.get(user_id)
+#             if not user:
+#                 user = args[1]
+#                 cache_data[user_id] = user
+#                 print(
+#                     f'put id={user_id}, val={user} in cache and put it to server')
+#                 return func(*args, **kwargs)
+#             print(
+#                 f'already have id={user_id}, val={user} in cache, not put to server')
+#             return user_id  # todo check
+#         elif func.__name__ == 'get':
+#             user_id = args[0]
+#             user = cache_data.get(user_id)
+#             if not user:
+#                 return func(*args, **kwargs)
+#             print(
+#                 f'get: already have id={user_id}, val={user} in cache, not get it from server')
+#             return user
+#         elif func.__name__ == 'delete':
+#             user_id = args[0]
+#             user = cache_data.get(user_id)
+#             if user:
+#                 del cache_data[user_id]
+#                 print(
+#                     f'delete id={user_id}, val={user} from cache and delete it from server')
+#                 return func(*args, **kwargs)
+#             print(
+#                 f'no id={user_id}, val={user} in cache, not delete from server')
+#             return 'success'
+#         else:
+#             print(f'unknown exe:{func.__name__}')
+#         return func(*args, **kwargs)
+
+#     return wrapper
+
+# decorator 2
+
+
+def lru_cache(size):
+    global cache_data
+    if cache_data == None:
+        cache_data = CacheDict(size)
+
+    def cache_decorator(func):
+        def wrapper(*args, **kwargs):
+            # print('[%s] %s()...' % (size, func.__name__))
+            if func.__name__ == 'put':
+                user_id = args[0]
+                user = cache_data.get(user_id)
+                if not user:
+                    user = args[1]
+                    cache_data[user_id] = user
+                    print(
+                        f'put id={user_id}, val={user} in cache and put it to server')
+                    return func(*args, **kwargs)
                 print(
-                    f'put id={user_id}, val={user} in cache and put it to server')
-                return func(*args, **kwargs)
-            print(
-                f'already have id={user_id}, val={user} in cache, not put to server')
-            return user_id  # todo check
-        elif func.__name__ == 'get':
-            user_id = args[0]
-            user = cache_data.get(user_id)
-            if not user:
-                return func(*args, **kwargs)
-            print(
-                f'get: already have id={user_id}, val={user} in cache, not get it from server')
-            return user
-        elif func.__name__ == 'delete':
-            user_id = args[0]
-            user = cache_data.get(user_id)
-            if user:
-                del cache_data[user_id]
+                    f'already have id={user_id}, val={user} in cache, not put to server')
+                return user_id  # todo check
+            elif func.__name__ == 'get':
+                user_id = args[0]
+                user = cache_data.get(user_id)
+                if not user:
+                    return func(*args, **kwargs)
                 print(
-                    f'delete id={user_id}, val={user} from cache and delete it from server')
-                return func(*args, **kwargs)
-            print(
-                f'no id={user_id}, val={user} in cache, not delete from server')
-            return 'success'
-        else:
-            print(f'unknown exe:{func.__name__}')
-        return func(*args, **kwargs)
+                    f'get: already have id={user_id}, val={user} in cache, not get it from server')
+                return user
+            elif func.__name__ == 'delete':
+                user_id = args[0]
+                user = cache_data.get(user_id)
+                if user:
+                    del cache_data[user_id]
+                    print(
+                        f'delete id={user_id}, val={user} from cache and delete it from server')
+                    return func(*args, **kwargs)
+                print(
+                    f'no id={user_id}, val={user} in cache, not delete from server')
+                return 'success'
+            else:
+                print(f'unknown exe:{func.__name__}')
+            return func(*args, **kwargs)
+        return wrapper
+    return cache_decorator
 
-    return wrapper
 
-
-@lru_cache
+@lru_cache(4)
 def put(key, user, data_bytes):
     print('put to remote server')
     return key
 
 
-@lru_cache
+@lru_cache(4)
 def get(key, data_bytes):
     print('get from remote server')
     return 'an user' + key
 
 
-@lru_cache
+@lru_cache(4)
 def delete(key, data_bytes):
     print('delete from remote server')
     return key
@@ -157,3 +208,26 @@ print(get("1001", 'send get data'))
 print(get("1002", 'send get data'))
 print(delete("1001", 'send delete data'))
 print(delete("1001", 'send delete data'))
+
+
+def log(prefix):
+    def log_decorator(f):
+        def wrapper(*args, **kw):
+            print('[%s] %s()...' % (prefix, f.__name__))
+            return f(*args, **kw)
+        return wrapper
+    return log_decorator
+
+
+@log('DEBUG')
+def test():
+    pass
+
+
+@log('INFO')
+def test2():
+    pass
+
+
+# print(test())
+# print(test2())
