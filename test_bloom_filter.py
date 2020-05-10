@@ -11,13 +11,13 @@ def test_bloom_filter():
     # 两个参数。键的数量，FP的概率。
     # err_rate和FP是不是相等的呀？
     bloomfilter = BloomFilter(NUM_KEYS, FALSE_POSITIVE_PROBABILITY)
-    # ？这些是key吗？
+    # 这些是key吗？是的
     word_present = ['abound', 'abounds', 'abundance', 'abundant', 'accessable',
                     'bloom', 'blossom', 'bolster', 'bonny', 'bonus', 'bonuses',
                     'coherent', 'cohesive', 'colorful', 'comely', 'comfort',
                     'gems', 'generosity', 'generous', 'generously', 'genial']
 
-    # ？ 测试的没有key？
+    # 测试的没有key？是的
     word_absent = ['facebook', 'twitter']
 
     # 全部加到bf里面去
@@ -27,7 +27,7 @@ def test_bloom_filter():
     # 取前10个元素的数组，加上缺失的两个元素素组。形成测试数组。
     test_words = word_present[:10] + word_absent
 
-    # ？ shuffle是打乱的意思吗？
+    #  shuffle是打乱的意思吗？是的，打乱顺序
     shuffle(test_words)
 
     # 遍历

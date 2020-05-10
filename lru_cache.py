@@ -29,6 +29,8 @@ def lru_cache(size):
     global cache_data
     if cache_data == None:
         cache_data = CacheDict(size)
+    if cache_data.cache_size != size:
+        cache_data = CacheDict(size)
 
     def cache_decorator(func):
         def wrapper(*args, **kwargs):
@@ -64,16 +66,16 @@ def lru_cache(size):
                 print(
                     f'no id={user_id}, val={user} in cache, not delete from server')
                 return 'success'
-            elif func.__name__ == 'fibonacci':
+            elif func.__name__ == 'fibonacci' or func.__name__ == 'get_data':
                 param = args[0]
                 value = cache_data.get(param)
                 if value:
-                    print(f"[cache-hit] fibonacci({param}) -> {value} ")
+                    print(f"[cache-hit] {func.__name__}({param}) -> {value} ")
                 else:
                     value = func(*args, **kwargs)
                     cache_data.put(param, value)
                     print(
-                        f"[{time.perf_counter()}] fibonacci({param}) -> {value} ")
+                        f"[{time.perf_counter()}] {func.__name__}({param}) -> {value} ")
                 return value
             else:
 
