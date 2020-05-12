@@ -9,7 +9,7 @@ from sample_data import USERS
 from server_config import NODES
 from pickle_hash import serialize_GET, serialize_PUT, deserialize, serialize_DELETE
 from node_ring import NodeRing
-from cache import lru_cache
+from lru_cache import lru_cache
 
 BUFFER_SIZE = 1024
 
@@ -46,7 +46,7 @@ def is_member(key):
     return bf.__contains__(key)
 
 
-@lru_cache
+@lru_cache(5)
 def put(key, user, data_bytes):
     add_member(key)
     print(f"add member {key} to bf")
@@ -58,7 +58,7 @@ def put(key, user, data_bytes):
     return response
 
 
-@lru_cache
+@lru_cache(5)
 def get(key, data_bytes):
     if is_member(key):
         print(f"{key} is a member")
@@ -72,7 +72,7 @@ def get(key, data_bytes):
         return None
 
 
-@lru_cache
+@lru_cache(5)
 def delete(key, data_bytes):
     if is_member(key):
         print(f"{key} is a member")
