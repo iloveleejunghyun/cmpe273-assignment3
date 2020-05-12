@@ -1,5 +1,15 @@
 # cache and bloom filter based on midterm
 
+What are the best k hashes and m bits values to store one million n keys (E.g. e52f43cd2c23bb2e6296153748382764) suppose we use the same MD5 hash key from pickle_hash.py and explain why?  
+
+Consider p = 0.05, then  
+
+m =(-1 * n * math.log(p))/ (math.log(2) ** 2)= 6235225  
+k = (m / n) * math.log(2)= 5
+
+m,k are calculated by python  
+
+
 ## Installation
 	pip install mmh3
 ## Example:

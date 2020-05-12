@@ -235,7 +235,10 @@ class BloomFilter(object):
 
 
 def test_yuan():
-    bf = BloomFilter()
+    bf = BloomFilter(1000000, 0.05)
+    print(f'bits m {bf.num_bits_m}')
+    print(f'bits k {bf.num_probes_k}')
+
     key1 = 'key1'
     key2 = 'key2'
 
